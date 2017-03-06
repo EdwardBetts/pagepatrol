@@ -2,7 +2,7 @@ from flask import Blueprint, request, render_template, redirect, url_for, flash
 from sqlalchemy import func
 from .model import Term, SafeArticle, SafePhrase
 from .database import session
-from .wikipedia import wiki_search
+from .wikipedia import wiki_search, hit_count
 import re
 
 bp = Blueprint('view', __name__)
@@ -18,9 +18,7 @@ def find_term_in_content(term, content, context=100):
 @bp.route("/")
 def index():
     order = request.args.get('order')
-    q = Term.query
-    if order == 'hits':
-        q = q.order_by(Term.total_hits)
+    q = Term.query.order_by(Term.total_hits if order == 'hits' else Term.term)
 
     sa = dict(session.query(SafeArticle.term, func.count(SafeArticle.title))
                      .group_by(SafeArticle.term))
@@ -28,6 +26,18 @@ def index():
                      .group_by(SafePhrase.term))
 
     return render_template('index.html', terms=q, sa=sa, sp=sp)
+
+@bp.route("/new", methods=['GET', 'POST'])
+def new_term():
+    term = request.form.get('term')
+    if request.method == 'POST' and term:
+        q = 'insource:"{}"'.format(term)
+        t = Term(term=term, total_hits=hit_count(q))
+        session.add(t)
+        session.commit()
+        flash('new term added: {}'.format(term))
+        return redirect(url_for('.index'))
+    return render_template('new_term.html')
 
 @bp.route("/mark_safe")
 def mark_safe():

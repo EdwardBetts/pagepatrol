@@ -1,0 +1,15 @@
+{% extends 'base.html' %}
+
+{% block title %}New term - page patrol{% endblock %}
+
+{% block content %}
+<h1>New term</h1>
+
+<form method="POST" class="form-inline">
+<div class="form-group">
+  <label for="term">term</label>
+  <input id="term" name="term" placeholder="new term" size="40"/>
+</div>
+<button type="submit" class="btn btn-default">add</button>
+</form>
+{% endblock %}
