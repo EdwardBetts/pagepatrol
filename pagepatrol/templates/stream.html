@@ -7,9 +7,11 @@
 {% block content %}
 <h2>{{ self.title() }}</h2>
 <p>
+<a href="{{ url_for('.index') }}">back to index</a>
+|
 <a href="{{ url_for('.safe_articles', term=term.term) }}">safe articles</a>
-| <a href="{{ url_for('.safe_phrases', term=term.term) }}">safe phrases</a>
-| <a href="{{ url_for('.index') }}">back to index</a>
+|
+<a href="{{ url_for('.safe_phrases', term=term.term) }}">safe phrases</a>
 </p>
 
 <div id="docs">
