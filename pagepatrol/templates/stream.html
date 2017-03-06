@@ -1,0 +1,102 @@
+{% extends 'base.html' %}
+
+{% block title %}
+{{ term.term }}
+{% endblock %}
+
+{% block content %}
+<h2>{{ self.title() }}</h2>
+<p>
+<a href="{{ url_for('.safe_articles', term=term.term) }}">safe articles</a>
+| <a href="{{ url_for('.safe_phrases', term=term.term) }}">safe phrases</a>
+| <a href="{{ url_for('.index') }}">back to index</a>
+</p>
+
+<div id="docs">
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='handlebars/handlebars.js') }}"></script>
+
+{% raw %}
+<script id="document-template" type="text/x-handlebars-template">
+<div id="doc{{ doc_index }}" class="result">
+<a id="title{{ doc_index }}" class="title" href="{{ article_url }}">{{ title }}</a>
+<button class="btn-safe btn btn-success">mark as safe article</button>
+<blockquote id="snippets{{ doc_index }}">&hellip;{{{ snippet }}}&hellip;</blockquote>
+</div>
+</script>
+{% endraw %}
+
+<script>
+var term = {{ term.term | tojson }};
+var url_term = {{ url_term | tojson }};
+var skip = {{ skip | tojson }};
+var api_url = 'https://en.wikipedia.org/w/api.php?callback=?'
+var check_titles = {{ url_for('.check_titles', term=url_term) | tojson }};
+var mark_safe_url = {{ url_for('.mark_as_safe', term=url_term) | tojson }};
+var seen = {};
+var doc_index = 0;
+var template = Handlebars.compile($("#document-template").html());
+var q = 'insource:"' + term + '"';
+var params = {
+  'srlimit': 50,
+  'srnamespace': 0,
+  'formatversion': 2,
+  'format': 'json',
+  'action': 'query',
+  'list': 'search',
+  'srprop': 'snippet',
+  'srsearch': q,
+}
+
+function mark_as_safe(event) {
+  event.preventDefault();
+  var result = $(this).closest('.result');
+  var title = result.find('.title').text();
+  console.log(title);
+  $.post(mark_safe_url, {'title': title});
+  result.hide();
+}
+
+function complete(data) {
+  var current = [];
+  $.each(data['query']['search'], function(index, doc) {
+    var title = doc['title'];
+    if ($.inArray(title, skip) == -1 && !(title in seen)) {
+      doc_index++;
+      var context = {
+        doc_index: doc_index,
+        article_url: "https://en.wikipedia.org/wiki/" + encodeURIComponent(title.replace(/ /g, '_')),
+        title: title,
+        snippet: doc.snippet
+      };
+      var element = $(template(context));
+      var safe = element.find('.btn-safe');
+      safe.click(mark_as_safe);
+      $("#docs").append(element);
+      seen[title] = doc_index;
+      current.push(title);
+    }
+  });
+
+  if (current.length > 0) {
+    $.getJSON(check_titles, {'titles': current}, function(data) {
+      $.each(data['skip'], function(index, title) {
+        var doc_index = seen[title];
+        $('#doc' + doc_index).remove();
+      });
+    });
+  }
+
+  if ('continue' in data && 'sroffset' in data['continue']) {
+    offset = data['continue']['sroffset'];
+    params['sroffset'] = offset;
+    $.getJSON(api_url, params, complete);
+  }
+}
+
+$.getJSON(api_url, params, complete);
+</script>
+{% endblock %}
