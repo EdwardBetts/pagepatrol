@@ -104,7 +104,7 @@ def patrol(term):
 
     safe_articles = {doc.title for doc in t.safe_articles}
 
-    results = wiki_search(term.get_query(), offset=offset)
+    results = wiki_search(t.get_query(), offset=offset)
     if results.total_hits != t.total_hits:
         t.total_hits = results.total_hits
         session.commit()
