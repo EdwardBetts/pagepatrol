@@ -5,8 +5,8 @@
   Safe phrases for {{ term.term }}
 {% endblock %}
 
-{% block dialogs %}
 {% set url_term = term.term.replace(' ', '_') %}
+{% block dialogs %}
 {{ delete_modal('Remove safe phrase',
                 'Are you sure?',
                 url_for('.remove_safe_phrase', term=url_term)) }}
