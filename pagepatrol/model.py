@@ -38,6 +38,12 @@ class Term(Base):
             titles.update(doc.title for doc in safe)
         return titles
 
+    def get_query(self):
+        safe_phrases = ''.join(' -insource:"{}"'.format(safe.phrase) for safe in self.safe_phrases)
+        q = 'insource:"{}"'.format(self.term)
+        if len(q) + len(safe_phrases) <= 300:
+            q += safe_phrases
+        return q
 
 class SearchResult(Base):
     __tablename__ = 'search_result'
