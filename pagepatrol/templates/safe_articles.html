@@ -5,8 +5,8 @@
   Safe articles for {{ term.term }}
 {% endblock %}
 
-{% block dialogs %}
 {% set url_term = term.term.replace(' ', '_') %}
+{% block dialogs %}
 {{ delete_modal('Remove safe article',
                 'Are you sure?',
                 url_for('.remove_safe_article', term=url_term)) }}
