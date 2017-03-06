@@ -3,6 +3,7 @@ from sqlalchemy import func
 from .model import Term, SafeArticle, SafePhrase
 from .database import session
 from .wikipedia import wiki_search, hit_count
+import logging
 import re
 
 bp = Blueprint('view', __name__)
@@ -111,19 +112,30 @@ def patrol(term):
 
     pattern = '|'.join(re.escape(safe.phrase) for safe in t.safe_phrases)
     re_phrase = re.compile('(' + pattern + ')', re.I)
+    total_hits = results.total_hits
 
-    docs = [doc for doc in results.docs
-                if doc['title'] not in safe_articles and
-                    t.term.lower() in doc['text'].lower() and
-                    (not pattern or not re_phrase.search(doc['text']))]
+    docs = []
+    for doc in results.docs:
+        if doc['title'] in safe_articles:
+            logging.info('safe article:', doc['title'])
+            total_hits -= 1
+            continue
+        if t.term.lower() not in doc['text'].lower():
+            logging.info('term not in article:', doc['title'])
+            total_hits -= 1
+            continue
+        if pattern and re_phrase.search(doc['text']):
+            logging.info('safe phrase:', doc['title'])
+            total_hits -= 1
+            continue
 
-    # safe_articles = term.articles_with_safe_phrase()
+        docs.append(doc)
+
     return render_template('search.html',
                            offset=offset,
+                           total_hits=total_hits,
                            results=results,
                            docs=docs,
                            safe_articles=safe_articles,
                            find_term_in_content=find_term_in_content,
                            term=t)
-
-

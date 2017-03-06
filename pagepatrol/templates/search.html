@@ -28,7 +28,7 @@ function mark_safe(num) {
 </p>
 
 <h2>{{ term.term }}</h2>
-{{ results.total_hits }} results<p>
+{{ total_hits }} results<p>
 {% for doc in docs %}
 {% set matches = find_term_in_content(term.term, doc.text ) %}
 <a id="title{{loop.index }}" href="https://en.wikipedia.org/wiki/{{ doc.title.replace(' ', '_') | urlencode }}">{{ doc.title }}</a>
