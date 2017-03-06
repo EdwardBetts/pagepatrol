@@ -8,17 +8,17 @@ Base.query = session.query_property()
 
 class SafePhrase(Base):
     __tablename__ = 'safe_phrase'
-    phrase = Column(Unicode(63), primary_key=True)
-    term = Column(Unicode(31), ForeignKey('term.term'), nullable=False)
+    phrase = Column(Unicode, primary_key=True)
+    term = Column(Unicode, ForeignKey('term.term'), nullable=False)
 
 class SafeArticle(Base):
     __tablename__ = 'safe_article'
-    title = Column(Unicode(127), primary_key=True)
-    term = Column(Unicode(31), ForeignKey('term.term'), nullable=False)
+    title = Column(Unicode, primary_key=True)
+    term = Column(Unicode, ForeignKey('term.term'), primary_key=True)
 
 class Term(Base):
     __tablename__ = 'term'
-    term = Column(Unicode(31), primary_key=True)
+    term = Column(Unicode, primary_key=True)
     total_hits = Column(Integer())
     safe_phrases = relationship(SafePhrase, collection_class=set)
     safe_articles = relationship(SafeArticle, collection_class=set)
@@ -41,6 +41,6 @@ class Term(Base):
 
 class SearchResult(Base):
     __tablename__ = 'search_result'
-    q = Column(Unicode(31), primary_key=True)
-    title = Column(Unicode(127), primary_key=True)
+    q = Column(Unicode, primary_key=True)
+    title = Column(Unicode, primary_key=True)
     timestamp = Column(DateTime(), primary_key=True)
