@@ -119,7 +119,6 @@ def patrol(term):
 
     # safe_articles = term.articles_with_safe_phrase()
     return render_template('search.html',
-                           q=q,
                            offset=offset,
                            results=results,
                            docs=docs,
