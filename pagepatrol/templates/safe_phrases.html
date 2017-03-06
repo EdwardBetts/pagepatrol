@@ -1,24 +1,30 @@
-{% set title='Safe phrases for ' + term.term %}
-{% set url_term = term.term.replace(' ', '_') %}
 {% from 'modal_dialogs.html' import delete_modal %}
-{% set dialogs %}
+{% extends 'base.html' %}
+
+{% block title %}
+  Safe phrases for {{ term.term }}
+{% endblock %}
+
+{% block dialogs %}
+{% set url_term = term.term.replace(' ', '_') %}
 {{ delete_modal('Remove safe phrase',
                 'Are you sure?',
                 url_for('.remove_safe_phrase', term=url_term)) }}
-{% endset %}
-{% include 'head.html' %}
+{% endblock %}
+
+{% block content %}
 <h2>{{ title }}</h2>
 <p>
-<a href="{{ url_for('.patrol', term=url_term) }}">patrol {{ term.term }}</a>
-| <a href="{{ url_for('.safe_articles', term=url_term) }}">safe articles</a>
-| <a href="{{ url_for('.index') }}">back to index</a>
+  <a href="{{ url_for('.patrol', term=url_term) }}">patrol {{ term.term }}</a>
+  | <a href="{{ url_for('.safe_articles', term=url_term) }}">safe articles</a>
+  | <a href="{{ url_for('.index') }}">back to index</a>
 </p>
 
 <ul>
 {% for safe in safe_phrases %}
-<li>{{ safe }}
-<span class="glyphicon glyphicon-remove" data-toggle="modal" data-target="#deleteModal" data-item="{{ safe }}"></span>
-</li>
+  <li>{{ safe }}
+  <span class="glyphicon glyphicon-remove" data-toggle="modal" data-target="#deleteModal" data-item="{{ safe }}"></span>
+  </li>
 {% endfor %}
 </ul>
 
@@ -31,8 +37,9 @@
 <button type="submit" class="btn btn-default">add</button>
 </form>
 </p>
+{% endblock %}
 
-{% set scripts %}
+{% block scripts %}
 <script>
 $('#deleteModal').on('show.bs.modal', function (event) {
   var trigger = $(event.relatedTarget)
@@ -45,6 +52,4 @@ $('#deleteModal').on('show.bs.modal', function (event) {
   modal.find('.modal-footer input').val(item)
 })
 </script>
-{% endset %}
-
-{% include 'foot.html' %}
+{% endblock %}
