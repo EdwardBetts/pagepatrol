@@ -22,7 +22,7 @@ sort by: <a href="{{ url_for('.index') }}">name</a> or <a href="{{ url_for('.ind
     {% set url = url_for('.patrol', term=t.term.replace(' ', '_')) %}
     <tr>
       <td><a href="{{ url }}">{{ term }}</a></td>
-      <td align="right">{{'{:,d}'.format(t.total_hits) if t.total_hits else '' }}</td>
+      <td align="right">{{'{:,d}'.format(t.total_hits | int) }}</td>
 
       <td align="right">
         {% if sa[term] %}{{'{:,d}'.format(sa[term]) }} <a href="{{ url_for('.safe_articles', term=term) }}">view</a>{% endif %}
