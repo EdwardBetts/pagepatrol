@@ -7,8 +7,6 @@ import re
 create_app('config.default')
 
 for t in Term.query:
-    if t.term != 'it manager':
-        continue
     old = t.total_hits
     q = t.get_query()
     results = wikipedia.wiki_search(t.get_query())
