@@ -26,7 +26,7 @@
 <p>
 <form method="POST" class="form-inline" action="{{ url_for('.add_safe_phrase', term=term.term.replace(' ', '_'))}}">
 <div class="form-group">
-    <input class="form-control" name="phrase" placeholder="safe phrase">
+    <input class="form-control" size="40" name="phrase" placeholder="safe phrase">
 </div>
 <button type="submit" class="btn btn-default">add</button>
 </form>
@@ -36,7 +36,7 @@
 <script>
 $('#deleteModal').on('show.bs.modal', function (event) {
   var trigger = $(event.relatedTarget)
-  var item = trigger.data('item') 
+  var item = trigger.data('item')
   var modal = $(this)
   var body = ('Are you sure you want to remove "' + item +
               '" as a safe phrase for "{{ term.term }}"')
