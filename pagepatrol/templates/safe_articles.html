@@ -1,26 +1,34 @@
-{% set title='Safe articles for ' + term.term %}
-{% set url_term = term.term.replace(' ', '_') %}
+{% extends 'base.html' %}
 {% from 'modal_dialogs.html' import delete_modal %}
-{% set dialogs %}
+
+{% block title %}
+  Safe articles for {{ term.term }}
+{% endblock %}
+
+{% block dialogs %}
+{% set url_term = term.term.replace(' ', '_') %}
 {{ delete_modal('Remove safe article',
                 'Are you sure?',
                 url_for('.remove_safe_article', term=url_term)) }}
-{% endset %}
-{% include 'head.html' %}
+{% endblock %}
+
+{% block content %}
 <h2>{{ title }}</h2>
 <p>
-<a href="{{ url_for('.patrol', term=url_term) }}">patrol {{ term.term }}</a>
-| <a href="{{ url_for('.safe_phrases', term=url_term) }}">safe phrases</a>
-| <a href="{{ url_for('.index') }}">back to index</a>
+  <a href="{{ url_for('.patrol', term=url_term) }}">patrol {{ term.term }}</a>
+  | <a href="{{ url_for('.safe_phrases', term=url_term) }}">safe phrases</a>
+  | <a href="{{ url_for('.index') }}">back to index</a>
 </p>
 <ul>
 {% for title in safe_articles %}
-<li><a href="https://en.wikipedia.org/wiki/ {{ title.replace(' ', '_') | urlize }}">{{ title }}</a>
-<span class="glyphicon glyphicon-remove" data-toggle="modal" data-target="#deleteModal" data-item="{{ title }}"></span>
-</li>
+  <li><a href="https://en.wikipedia.org/wiki/ {{ title.replace(' ', '_') | urlize }}">{{ title }}</a>
+  <span class="glyphicon glyphicon-remove" data-toggle="modal" data-target="#deleteModal" data-item="{{ title }}"></span>
+  </li>
 {% endfor %}
 </ul>
-{% set scripts %}
+{% endblock %}
+
+{% block scripts %}
 <script>
 $('#deleteModal').on('show.bs.modal', function (event) {
   var trigger = $(event.relatedTarget)
@@ -33,6 +41,4 @@ $('#deleteModal').on('show.bs.modal', function (event) {
   modal.find('.modal-footer input').val(item)
 })
 </script>
-{% endset %}
-
-{% include 'foot.html' %}
+{% endblock %}
