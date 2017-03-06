@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="{{
+    url_for('static', filename='bootswatch/' + config.SWATCH + '/bootstrap.css')
+}}">
+<link rel="shortcut icon" href="/img/accept_icon.png" />
+<title>{{ title | default("Page patrol") }}</title>
+
+</head>
+<body>
+{{ dialogs | safe }}
+<div class="container-fluid">
+{% with messages = get_flashed_messages() %}
+  {% if messages %}
+    {% for message in messages %}
+<div class="alert alert-success alert-dismissible" role="alert">
+  <button type="button" class="close" data-dismiss="alert"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+        {{ message }}
+</div>
+    {% endfor %}
+  {% endif %}
+{% endwith %}

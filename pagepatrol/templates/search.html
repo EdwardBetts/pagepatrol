@@ -1,0 +1,52 @@
+{% set title='Patrol ' + term.term %}
+{% set url_term = term.term.replace(' ', '_') %}
+{% include 'head.html' %}
+<style>
+span.searchmatch { font-weight: bold; }
+span.safe { font-weight: bold; }
+</style>
+
+{% set scripts %}
+<script>
+$(function() { $("span.safe").hide(); });
+function mark_safe(num) {
+    var title = $("a#title" + num).text();
+    $.get('{{url_for('.mark_safe')}}', { 'term': '{{term.term}}', 'title': title }, function(data) {
+        $("div#snippets" + num).hide();
+        $("a#safe_link" + num).hide();
+        $("span#safe" + num).show();
+    });
+}
+</script>
+{% endset %}
+
+<h2>Patrol: {{ term.term }}</h2>
+<p>
+<a href="{{ url_for('.safe_articles', term=term.term) }}">safe articles</a>
+| <a href="{{ url_for('.safe_phrases', term=term.term) }}">safe phrases</a>
+| <a href="{{ url_for('.index') }}">back to index</a>
+</p>
+
+<h2>{{ term.term }}</h2>
+{{ results.total_hits }} results<p>
+{% for doc in docs %}
+{% set matches = find_term_in_content(term.term, doc.text ) %}
+<a id="title{{loop.index }}" href="https://en.wikipedia.org/wiki/{{ doc.title.replace(' ', '_') | urlencode }}">{{ doc.title }}</a>
+<a id="safe_link{{ loop.index}}" href="{{ url_for('.mark_safe', title=doc.title, term=term.term, offset=offset) }}" class="btn btn-success" role="button">mark as safe article</a>
+{# <span id="safe{{ loop.index }}" class="safe">safe article</span> #}
+<br>
+{% if matches %}
+    <div id="snippets{{ loop.index }}">
+    {% for snippet in matches %}
+    <blockquote>...{{ snippet[0] }}<b>{{ snippet[1] }}</b>{{ snippet[2] }}...</blockquote>
+    {% endfor %}
+    {% if request.args.debug %}
+    <pre>{{ doc | pprint }}</pre>
+    {% endif %}
+    </div>
+{% endif %}
+{% endfor %}
+{% if results.next_offset %}
+    <a href="{{ url_for('.patrol', term=url_term, offset=results.next_offset) }}">next</a>
+{% endif %}
+{% include 'foot.html' %}

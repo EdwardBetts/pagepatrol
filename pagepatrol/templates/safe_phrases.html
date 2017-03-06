@@ -1,0 +1,50 @@
+{% set title='Safe phrases for ' + term.term %}
+{% set url_term = term.term.replace(' ', '_') %}
+{% from 'modal_dialogs.html' import delete_modal %}
+{% set dialogs %}
+{{ delete_modal('Remove safe phrase',
+                'Are you sure?',
+                url_for('.remove_safe_phrase', term=url_term)) }}
+{% endset %}
+{% include 'head.html' %}
+<h2>{{ title }}</h2>
+<p>
+<a href="{{ url_for('.patrol', term=url_term) }}">patrol {{ term.term }}</a>
+| <a href="{{ url_for('.safe_articles', term=url_term) }}">safe articles</a>
+| <a href="{{ url_for('.index') }}">back to index</a>
+</p>
+
+<ul>
+{% for safe in safe_phrases %}
+<li>{{ safe }}
+<span class="glyphicon glyphicon-remove" data-toggle="modal" data-target="#deleteModal" data-item="{{ safe }}"></span>
+</li>
+{% endfor %}
+</ul>
+
+<h4>add new safe phrase</h4>
+<p>
+<form method="POST" class="form-inline" action="{{ url_for('.add_safe_phrase', term=term.term.replace(' ', '_'))}}">
+<div class="form-group">
+    <input class="form-control" name="phrase" placeholder="safe phrase">
+</div>
+<button type="submit" class="btn btn-default">add</button>
+</form>
+</p>
+
+{% set scripts %}
+<script>
+$('#deleteModal').on('show.bs.modal', function (event) {
+  var trigger = $(event.relatedTarget)
+  var item = trigger.data('item') 
+  var modal = $(this)
+  var body = ('Are you sure you want to remove "' + item +
+              '" as a safe phrase for "{{ term.term }}"')
+  modal.find('.modal-title').text('Remove safe phrase: ' + item)
+  modal.find('.modal-body').text(body)
+  modal.find('.modal-footer input').val(item)
+})
+</script>
+{% endset %}
+
+{% include 'foot.html' %}

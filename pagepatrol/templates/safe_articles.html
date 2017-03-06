@@ -1,0 +1,38 @@
+{% set title='Safe articles for ' + term.term %}
+{% set url_term = term.term.replace(' ', '_') %}
+{% from 'modal_dialogs.html' import delete_modal %}
+{% set dialogs %}
+{{ delete_modal('Remove safe article',
+                'Are you sure?',
+                url_for('.remove_safe_article', term=url_term)) }}
+{% endset %}
+{% include 'head.html' %}
+<h2>{{ title }}</h2>
+<p>
+<a href="{{ url_for('.patrol', term=url_term) }}">patrol {{ term.term }}</a>
+| <a href="{{ url_for('.safe_phrases', term=url_term) }}">safe phrases</a>
+| <a href="{{ url_for('.index') }}">back to index</a>
+</p>
+<ul>
+{% for title in safe_articles %}
+<li><a href="https://en.wikipedia.org/wiki/ {{ title.replace(' ', '_') | urlize }}">{{ title }}</a>
+<span class="glyphicon glyphicon-remove" data-toggle="modal" data-target="#deleteModal" data-item="{{ title }}"></span>
+</li>
+{% endfor %}
+</ul>
+{% set scripts %}
+<script>
+$('#deleteModal').on('show.bs.modal', function (event) {
+  var trigger = $(event.relatedTarget)
+  var item = trigger.data('item') 
+  var modal = $(this)
+  var body = ('Are you sure you want to remove "' + item +
+              '" as a safe article for "{{ term.term }}"')
+  modal.find('.modal-title').text('Remove safe article: ' + item)
+  modal.find('.modal-body').text(body)
+  modal.find('.modal-footer input').val(item)
+})
+</script>
+{% endset %}
+
+{% include 'foot.html' %}
