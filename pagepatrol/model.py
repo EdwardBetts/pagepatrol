@@ -9,10 +9,21 @@ Base.query = session.query_property()
 class SafePhrase(Base):
     __tablename__ = 'safe_phrase'
     phrase = Column(Unicode, primary_key=True)
+    term = Column(Unicode, ForeignKey('term.term'), primary_key=True)
+
+class SafePhraseArtcle(Base):
+    __tablename__ = 'safe_phrase_article'
+    phrase = Column(Unicode, primary_key=True)
+    title = Column(Unicode, primary_key=True)
     term = Column(Unicode, ForeignKey('term.term'), nullable=False)
 
 class SafeArticle(Base):
     __tablename__ = 'safe_article'
+    title = Column(Unicode, primary_key=True)
+    term = Column(Unicode, ForeignKey('term.term'), primary_key=True)
+
+class TermNotInArticle(Base):
+    __tablename__ = 'term_not_in_article'
     title = Column(Unicode, primary_key=True)
     term = Column(Unicode, ForeignKey('term.term'), primary_key=True)
 
