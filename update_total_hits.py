@@ -13,6 +13,7 @@ for t in Term.query:
     t.total_hits = results.total_hits
 
     if results.total_hits < 500:
+        hits = set()
         while True:
             safe_articles = {doc.title for doc in t.safe_articles}
             pattern = '|'.join(re.escape(safe.phrase) for safe in t.safe_phrases)
@@ -20,15 +21,17 @@ for t in Term.query:
 
             for doc in results.docs:
                 if doc['title'] in safe_articles:
-                    t.total_hits -= 1
+                    continue
                 if t.term.lower() not in doc['text'].lower():
-                    t.total_hits -= 1
+                    continue
                 if pattern and re_phrase.search(doc['text']):
-                    t.total_hits -= 1
+                    continue
+                hits.add(doc['title'])
             if not results.next_offset:
                 break
             results = wikipedia.wiki_search(t.get_query(), offset=results.next_offset)
+        t.total_hits = len(hits)
 
-    print('{:14s} {:5} -> {:5d}'.format(t.term, old or '', t.total_hits))
+    print('{:14s} {:5} -> {:5d}'.format(t.term, (old if old is not None else ''), t.total_hits))
     session.add(t)
     session.commit()
