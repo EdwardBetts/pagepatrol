@@ -1,8 +1,8 @@
-from flask import Blueprint, request, render_template, redirect, url_for, flash
+from flask import Blueprint, request, render_template, redirect, url_for, flash, jsonify
 from sqlalchemy import func
-from .model import Term, SafeArticle, SafePhrase
+from .model import Term, SafeArticle, SafePhrase, SafePhraseArtcle, TermNotInArticle
 from .database import session
-from .wikipedia import wiki_search, hit_count
+from .wikipedia import wiki_search, hit_count, get_content
 import logging
 import re
 
@@ -39,6 +39,14 @@ def new_term():
         flash('new term added: {}'.format(term))
         return redirect(url_for('.index'))
     return render_template('new_term.html')
+
+@bp.route("/mark_as_safe/<term>", methods=['POST'])
+def mark_as_safe(term):
+    t = Term.query.get(term.replace('_', ' '))
+    title = request.form['title']
+    t.safe_articles.add(SafeArticle(title=title))
+    session.commit()
+    return jsonify(success=True)
 
 @bp.route("/mark_safe")
 def mark_safe():
@@ -99,6 +107,24 @@ def remove_safe_phrase(term):
 
 @bp.route("/patrol/<term>")
 def patrol(term):
+    skip = set()
+    t = Term.query.get(term.replace('_', ' '))
+    session.expire(t)
+    skip |= {doc.title for doc in t.safe_articles}
+
+    q = session.query(SafePhraseArtcle.title).filter_by(term=t.term).distinct()
+    skip |= {row[0] for row in q}
+
+    q = session.query(TermNotInArticle.title).filter_by(term=t.term).distinct()
+    skip |= {row[0] for row in q}
+
+    return render_template('stream.html',
+                           url_term=term,
+                           term=t,
+                           skip=list(skip))
+
+@bp.route("/old_patrol/<term>")
+def old_patrol(term):
     offset = int(request.args.get('offset') or 0)
     t = Term.query.get(term.replace('_', ' '))
     session.expire(t)
@@ -139,3 +165,48 @@ def patrol(term):
                            safe_articles=safe_articles,
                            find_term_in_content=find_term_in_content,
                            term=t)
+
+def escape_phrase(phrase):
+    first = phrase[0]
+    if not first.isalpha():
+        return re.escape(phrase)
+    return '[{}{}]'.format(first.lower(), first.upper()) + re.escape(phrase[1:])
+
+def lc_first(s):
+    return s[0].lower() + s[1:]
+
+@bp.route('/check_titles/<term>')
+def check_titles(term):
+    skip = []
+    t = Term.query.get(term.replace('_', ' '))
+    session.expire(t)
+    lc_term = t.term.lower()
+    titles = request.args.getlist('titles[]')
+    if not titles:
+        return jsonify(skip=skip)
+
+    lookup = {lc_first(safe.phrase): safe.phrase for safe in t.safe_phrases}
+
+    pattern = '|'.join(escape_phrase(phrase) for phrase in lookup.values())
+    re_phrase = re.compile('(' + pattern + ')')
+    pages = get_content(titles)
+    commit_needed = False
+    for page in pages:
+        title = page['title']
+        content = page['revisions'][0]['content']
+        if lc_term not in content.lower():
+            i = TermNotInArticle(title=title, term=t.term)
+            session.merge(i)
+            commit_needed = True
+            skip.append(title)
+        if pattern:
+            m = re_phrase.search(content)
+            if m:
+                phrase = lookup[lc_first(m.group(1))]
+                i = SafePhraseArtcle(phrase=phrase, title=title, term=t.term)
+                session.merge(i)
+                commit_needed = True
+                skip.append(page['title'])
+    if commit_needed:
+        session.commit()
+    return jsonify(skip=skip)
