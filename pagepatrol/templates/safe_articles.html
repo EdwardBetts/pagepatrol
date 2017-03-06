@@ -32,7 +32,7 @@
 <script>
 $('#deleteModal').on('show.bs.modal', function (event) {
   var trigger = $(event.relatedTarget)
-  var item = trigger.data('item') 
+  var item = trigger.data('item')
   var modal = $(this)
   var body = ('Are you sure you want to remove "' + item +
               '" as a safe article for "{{ term.term }}"')
