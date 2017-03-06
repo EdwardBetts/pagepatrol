@@ -102,18 +102,9 @@ def patrol(term):
     t = Term.query.get(term.replace('_', ' '))
     session.expire(t)
 
-    safe_phrases = ''.join(' -insource:"{}"'.format(safe.phrase) for safe in t.safe_phrases)
-    # q = '"{}" -intitle:"{}"'.format(t.term, t.term) + safe_phrases
-
-    base_q = 'insource:"{}"'.format(t.term)
-    if len(base_q) + len(safe_phrases) <= 300:
-        q = base_q + safe_phrases
-    else:
-        q = base_q
-
     safe_articles = {doc.title for doc in t.safe_articles}
 
-    results = wiki_search(q, offset=offset)
+    results = wiki_search(term.get_query(), offset=offset)
     if results.total_hits != t.total_hits:
         t.total_hits = results.total_hits
         session.commit()
