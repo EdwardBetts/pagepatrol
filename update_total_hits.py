@@ -7,6 +7,8 @@ import re
 create_app('config.default')
 
 for t in Term.query:
+    if t.term != 'it manager':
+        continue
     old = t.total_hits
     q = t.get_query()
     results = wikipedia.wiki_search(t.get_query())
@@ -17,7 +19,7 @@ for t in Term.query:
         while True:
             safe_articles = {doc.title for doc in t.safe_articles}
             pattern = '|'.join(re.escape(safe.phrase) for safe in t.safe_phrases)
-            re_phrase = re.compile('(' + pattern + ')', re.I)
+            re_phrase = re.compile('(' + pattern + ')')
 
             for doc in results.docs:
                 if doc['title'] in safe_articles:

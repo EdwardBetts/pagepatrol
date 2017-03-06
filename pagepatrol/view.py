@@ -111,7 +111,7 @@ def patrol(term):
         session.commit()
 
     pattern = '|'.join(re.escape(safe.phrase) for safe in t.safe_phrases)
-    re_phrase = re.compile('(' + pattern + ')', re.I)
+    re_phrase = re.compile('(' + pattern + ')')
     total_hits = results.total_hits
 
     docs = []
