@@ -5,11 +5,14 @@
   <meta charset="utf-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="stylesheet" href="{{
-      url_for('static', filename='bootswatch/' + config.SWATCH + '/bootstrap.css')
-  }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='bootswatch/' + config.SWATCH + '/bootstrap.css') }}">
   <link rel="shortcut icon" href="/img/accept_icon.png" />
   <title>{% block title %}Page patrol{% endblock %}</title>
+
+  <style>
+  span.searchmatch { font-weight: bold; }
+  span.safe { font-weight: bold; }
+  </style>
 {% endblock %}
 </head>
 <body>
