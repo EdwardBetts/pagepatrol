@@ -25,7 +25,6 @@ SEARCH_PARAMS = {
     'formatversion': 2,
 }
 
-
 class SearchResults(object):
     def __init__(self, query_json, total_hits=None):
         query = query_json['query']
@@ -70,3 +69,25 @@ def find_matching_titles(q):
     query_json = r.json()
     return [doc['title'] for doc in query_json['query']['search']]
 
+def term_search(q):
+    params = dict(SEARCH_PARAMS)
+    params['srsearch'] = 'insource:"{}"'.format(q)
+    params['srprop'] = ''
+
+    r = requests.get(QUERY_URL, params=params)
+    query_json = r.json()
+    print(r.url)
+    return [doc['title'] for doc in query_json['query']['search']]
+
+def get_content(titles):
+    params = {
+        'format': 'json',
+        'action': 'query',
+        'formatversion': 2,
+        'prop': 'revisions|info',
+        'rvprop': 'content|timestamp',
+        'titles': '|'.join(titles)
+    }
+
+    r = requests.get(QUERY_URL, params=params)
+    return r.json()['query']['pages']
