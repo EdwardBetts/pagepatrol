@@ -5,7 +5,7 @@
 
 <p><a href="{{ url_for('.new_term') }}">add a new term</a></p>
 
-sort by: <a href="{{ url_for('.index') }}">name</a> or <a href="{{ url_for('.index', order='hits') }}">hits</a>
+sort by: <a href="{{ url_for('.index', order='name') }}">name</a> or <a href="{{ url_for('.index', order='hits') }}">hits</a>
 
 <table class="table table-condensed" style="width:auto">
   <thead>

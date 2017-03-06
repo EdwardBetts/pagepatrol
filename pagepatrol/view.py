@@ -1,7 +1,7 @@
-from flask import Blueprint, request, render_template, redirect, url_for, flash, jsonify
+from flask import Blueprint, request, render_template, redirect, url_for, flash, jsonify, session
 from sqlalchemy import func
 from .model import Term, SafeArticle, SafePhrase, SafePhraseArtcle, TermNotInArticle
-from .database import session
+from . import database
 from .wikipedia import wiki_search, hit_count, get_content
 import logging
 import re
@@ -19,12 +19,18 @@ def find_term_in_content(term, content, context=100):
 @bp.route("/")
 def index():
     order = request.args.get('order')
+    if order:
+        session['order'] = order
+    else:
+        order = session.get('order')
     q = Term.query.order_by(Term.total_hits if order == 'hits' else Term.term)
 
-    sa = dict(session.query(SafeArticle.term, func.count(SafeArticle.title))
-                     .group_by(SafeArticle.term))
-    sp = dict(session.query(SafePhrase.term, func.count(SafePhrase.phrase))
-                     .group_by(SafePhrase.term))
+    sa = dict(database.session.query(SafeArticle.term,
+                                     func.count(SafeArticle.title))
+                      .group_by(SafeArticle.term))
+    sp = dict(database.session.query(SafePhrase.term,
+                                     func.count(SafePhrase.phrase))
+                      .group_by(SafePhrase.term))
 
     return render_template('index.html', terms=q, sa=sa, sp=sp)
 
@@ -34,8 +40,8 @@ def new_term():
     if request.method == 'POST' and term:
         q = 'insource:"{}"'.format(term)
         t = Term(term=term, total_hits=hit_count(q))
-        session.add(t)
-        session.commit()
+        database.session.add(t)
+        database.session.commit()
         flash('new term added: {}'.format(term))
         return redirect(url_for('.index'))
     return render_template('new_term.html')
@@ -45,7 +51,7 @@ def mark_as_safe(term):
     t = Term.query.get(term.replace('_', ' '))
     title = request.form['title']
     t.safe_articles.add(SafeArticle(title=title))
-    session.commit()
+    database.session.commit()
     return jsonify(success=True)
 
 @bp.route("/mark_safe")
@@ -56,7 +62,7 @@ def mark_safe():
 
     t = Term.query.get(term)
     t.safe_articles.add(SafeArticle(title=title))
-    session.commit()
+    database.session.commit()
 
     return redirect(url_for('.patrol', term=term, offset=offset))
 
@@ -79,7 +85,7 @@ def add_safe_phrase(term):
     t = Term.query.get(term.replace('_', ' '))
     phrase = request.form['phrase']
     t.safe_phrases.add(SafePhrase(phrase=phrase))
-    session.commit()
+    database.session.commit()
     flash('"{}" added as safe phrase for "{}"'.format(phrase, t.term))
     return redirect(url_for('.safe_phrases', term=term))
 
@@ -89,8 +95,8 @@ def remove_safe_article(term):
     t = Term.query.get(term_clean)
     article = request.form['item']
     sa = SafeArticle.query.filter_by(term=term_clean, title=article).one()
-    session.delete(sa)
-    session.commit()
+    database.session.delete(sa)
+    database.session.commit()
     flash('"{}" is no longer a safe article for "{}"'.format(article, t.term))
     return redirect(url_for('.safe_articles', term=term))
 
@@ -100,8 +106,8 @@ def remove_safe_phrase(term):
     t = Term.query.get(term_clean)
     phrase = request.form['item']
     sp = SafePhrase.query.filter_by(term=term_clean, phrase=phrase).one()
-    session.delete(sp)
-    session.commit()
+    database.session.delete(sp)
+    database.session.commit()
     flash('"{}" is no longer a safe phrase for "{}"'.format(phrase, t.term))
     return redirect(url_for('.safe_phrases', term=term))
 
@@ -109,13 +115,17 @@ def remove_safe_phrase(term):
 def patrol(term):
     skip = set()
     t = Term.query.get(term.replace('_', ' '))
-    session.expire(t)
+    database.session.expire(t)
     skip |= {doc.title for doc in t.safe_articles}
 
-    q = session.query(SafePhraseArtcle.title).filter_by(term=t.term).distinct()
+    q = (database.session.query(SafePhraseArtcle.title)
+                         .filter_by(term=t.term)
+                         .distinct())
     skip |= {row[0] for row in q}
 
-    q = session.query(TermNotInArticle.title).filter_by(term=t.term).distinct()
+    q = (database.session.query(TermNotInArticle.title)
+                         .filter_by(term=t.term)
+                         .distinct())
     skip |= {row[0] for row in q}
 
     return render_template('stream.html',
@@ -127,14 +137,14 @@ def patrol(term):
 def old_patrol(term):
     offset = int(request.args.get('offset') or 0)
     t = Term.query.get(term.replace('_', ' '))
-    session.expire(t)
+    database.session.expire(t)
 
     safe_articles = {doc.title for doc in t.safe_articles}
 
     results = wiki_search(t.get_query(), offset=offset)
     if results.total_hits != t.total_hits:
         t.total_hits = results.total_hits
-        session.commit()
+        database.session.commit()
 
     pattern = '|'.join(re.escape(safe.phrase) for safe in t.safe_phrases)
     re_phrase = re.compile('(' + pattern + ')')
@@ -167,10 +177,10 @@ def old_patrol(term):
                            term=t)
 
 def escape_phrase(phrase):
-    first = phrase[0]
-    if not first.isalpha():
+    c1 = phrase[0]
+    if not c1.isalpha():
         return re.escape(phrase)
-    return '[{}{}]'.format(first.lower(), first.upper()) + re.escape(phrase[1:])
+    return '[{}{}]'.format(c1.lower(), c1.upper()) + re.escape(phrase[1:])
 
 def lc_first(s):
     return s[0].lower() + s[1:]
@@ -179,7 +189,7 @@ def lc_first(s):
 def check_titles(term):
     skip = []
     t = Term.query.get(term.replace('_', ' '))
-    session.expire(t)
+    database.session.expire(t)
     lc_term = t.term.lower()
     titles = request.args.getlist('titles[]')
     if not titles:
@@ -196,7 +206,7 @@ def check_titles(term):
         content = page['revisions'][0]['content']
         if lc_term not in content.lower():
             i = TermNotInArticle(title=title, term=t.term)
-            session.merge(i)
+            database.session.merge(i)
             commit_needed = True
             skip.append(title)
         if pattern:
@@ -204,9 +214,9 @@ def check_titles(term):
             if m:
                 phrase = lookup[lc_first(m.group(1))]
                 i = SafePhraseArtcle(phrase=phrase, title=title, term=t.term)
-                session.merge(i)
+                database.session.merge(i)
                 commit_needed = True
                 skip.append(page['title'])
     if commit_needed:
-        session.commit()
+        database.session.commit()
     return jsonify(skip=skip)
